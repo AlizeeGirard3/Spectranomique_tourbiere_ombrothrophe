@@ -4,21 +4,6 @@
 #                   Lissage données spectrales
 #-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 # NOTES : voir https://github.com/elaliberte/warren-spectra 
-# SECTION ARCHIVE CONTIENT : √ code juste savitsky-golay (sans lissage)
-#                            √ code moyenne de chevauchement SWIR1-2 (essai)
-#                            √ code de visualisation divers
-#                            √ code initial de match_sensors (maintenant dans script netotyage_spectres.R)
-
-#
-###
-#####
-#######
-#########  [...]
-#######
-#####
-###
-#
-
 
 #-=-=-=-=-=-=-=-=-=-=-=-=-
 # Libraries ----
