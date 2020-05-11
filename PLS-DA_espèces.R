@@ -3,18 +3,16 @@
 #-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 #                               PLS-DA TOUTES ESPÈCES                                  #  
 #-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-# NOTES : voir RESOURCES dans document "PLS" pour scripts d'Anna
 
 
 #-=-=-=-=-=-=-=-=-=-=-=-=-
 # Libraries ----
 #-=-=-=-=-=-=-=-=-=-=-=-=-
 
-library(plyr) # revalue
+library(plyr) # revalue()
 library(dplyr)
 library(spectrolab)
 library(caret) # Classification And REgression Training
-library(beepr) # bruit à la fin d'une analyse
 library(plotly) # plots
 library (agricolae) # Tuckey test
 library(reshape)
@@ -28,15 +26,12 @@ library(tidyverse) # rownames_to_column()
 # Données ----
 #-=-=-=-=-=-=-=-=-=-=-=-=-
 
-# définir le répertoire
-# setwd("~/Documents/Maîtrise/DonnéesAnalyses/PLS/R")
-# setwd('/media/udem/ALIZEE/R 21 aout')
-
+# importer données spectrales
 load("/Users/Aliz/Documents/Maîtrise/DonnéesAnalyses/PLS/rt_sg_normalized_large.RData") # rt_sg_normalized_large
 refl_norm <- rt_sg_normalized_large %>% 
-  dplyr::filter(propriete == "reflectance")
-# issu du script "spectre_normalisation.R" dans document scripts-NETTOYAGE
+  dplyr::filter(propriete == "reflectance") # issu du script "spectre_normalisation.R" dans document scripts-NETTOYAGE
 
+# importer modèles directement
 # --->>> modèle test n_comps <<<---
 # mods_tous <- readRDS("~/DA/savedRDS/ttsp_50iter_normalized_PLSDA_mods.rds") # enregistré le ? / refait le 5 août avec vector-normalized
 
@@ -57,10 +52,10 @@ refl_norm <- rt_sg_normalized_large %>%
 dada <- as.data.frame(refl_norm)
 table(dada$scientific_name)
 
-# créer objet de classes qu'on veut retrouver
+# créer objet de classes qu'on veut prédire
 classi <- dada$scientific_name # facteurs *
 
-n_iter <- 50
+n_iter <- 50 # beacoup d'itérations, entre 50 et 100
 
 # déterminer quels échantillons dans train et test [... plusieurs lignes]
 rndm_id <- list() # specify no samples per species for training, alternative to % partitioning
@@ -69,12 +64,12 @@ for (i in seq(n_iter)){ # fonction pour inventer une séquence de 1:50 / 50 fois
   rndm_id[[i]] <- with(dada, ave(1:nrow(dada), scientific_name, FUN = function(x) {sample.int(length(x))}))
 }
 
-n_iter <- 50 
+n_iter <- 50
 mods_tous <- list() 
 
 # code de l'itération
 for (i in seq(n_iter)){               
-  inTrain <- createDataPartition(y = classi, p = .70, list = FALSE) 
+  inTrain <- createDataPartition(y = classi, p = .70, list = FALSE) # 70 % des espèces dans le groupe training
   print(i)
   flush.console() 
   set.seed(i)
@@ -85,19 +80,18 @@ for (i in seq(n_iter)){
   plsFit <- train(traini, trainclass, method = "simpls", tuneLength = 10,
                   probMethod = "Bayes", trControl = trainControl(method = "boot")) 
   mods_tous[[i]] <- plsFit
-  # beep(3)
 }
 
 # EXPLICATIONS ----
 # la formule ci-haut demande 
 # √ pour chaque (i) dans chaque fois qu'on va rouler la fxn (50 fois)
-# √ inTrain <- createDataPartition(y = classi, p = , list = FALSE) (quick) / devient dit TRUE si valeur < (petite) = au chiffre mentionné
+# √ inTrain <- createDataPartition(y = classi, p = , list = FALSE) (quick) / dit TRUE si valeur <= au chiffre mentionné
 # √ imprime i (après l'itération)
-# √ et invente des groupes de training et de test selon les valeures de inTrain obtenues
+# √ et invente des groupes de training et de test selon les valeurs de inTrain obtenues
 # √ ensuite fait une liste (mods) de i et fait une plsFit dessus
 # ----
 
-# saveRDS(mods_tous, "savedRDS/ttsp_50iter_normalized_PLSDA_mods.rds") # long, fait le 5 juillet (100 iter, 70-30%) / fait le 2 août (50 iter, 70-30%) / normalized 6 août / 16 oct (aucune raison)
+# saveRDS(mods_tous, "savedRDS/ttsp_50iter_normalized_PLSDA_mods.rds") # long
 
 head(mods_tous[[2]]$results)
 
@@ -121,7 +115,7 @@ table(n_comps)
 # 1 11 20  9  6  3 
 # n_comps             NORMALISÉ, 50 ITER, pas les mm résultats (mais mm conclusion)
 # 3  4  5  6  7  8 
-# 2 13 14  9 10  2 
+# 2 13 14  9 10  2  # 14x proposé de prendre 5 ncomps, 13x 14 ncomps
 
 ########################  selon un test de Tukey sur résultats kappa  ######################## 
 
@@ -172,13 +166,13 @@ ggsave('tuckey_2août_PLSDA_normalized_ttsp.pdf', height = 10, width = 12)
 # nombre de composants
 n_comps <- 4 # nombre de composants choisi
 fin_mods_tous <- list()
-n_iter = 50 # essayer  à 50 itérations !!
+n_iter = 50 # 50 itérations 
 
 for (i in 1:n_iter){ # same as 1:50 
   print(i)
   flush.console()
   set.seed(i)
-  inTrain <- createDataPartition(y = classi, p = .70, list = FALSE)
+  inTrain <- createDataPartition(y = classi, p = .70, list = FALSE) # 70% des 
   training <- dada[inTrain,  6:2005]
   testing <- dada[!(inTrain),  6:2005]
   trainclass <- as.factor(classi[inTrain]); testclass <- as.factor(classi[!(inTrain)])
@@ -192,16 +186,6 @@ head(fin_mods_tous[[1]])
 # saveRDS(fin_mods_tous, "~/Documents/Maîtrise/DonnéesAnalyses/PLS/DA/savedRDS/ttsp_50iter_normalized_PLSDA_fin_mods.rds")
 # 4 juillet : 70%-30%, 100 itérations, 4 n_comps / 2 août : 70-30%, 50 itérations, 4 n_comps
 # 5 août : 70-30%, 50 iter, 4 n_comps, NORMALISÉ
-# 16 oct, je savais pas que je les avait enregistrés
-
-#-=-=-=-=-=-=-=-=-=-=-=-=- 
-# Vérification cal et val                                                                                                                                 ----        
-#-=-=-=-=-=-=-=-=-=-=-=-=-
-
-# NOTE : la différence de R2 (goodness of fit) ne devrait pas être > ~ 0.05 (plus grande que) 
-#        le R2 de val est tjrs plus faible malgré tout
-
-# trouver où on trouve ça
 
 
 #=======================================# VISUALISATION #=======================================#                    ----
@@ -236,9 +220,8 @@ head(out[[1]])
 # "scores describe the position of each sample in each determined latent variable and weights describe the contribution of each variable to each LV "
 # √ remplace les espaces dans out[[i]]
 # √ crée une colonne avec les noms d'espèce
-# √ met les lignes en ordre croissant (?)
+# √ met les lignes en ordre croissant 
 # √ met les couleurs précisées ci-haut, répète les couleurs autant de fois qu'il y a d'items par espèce (species) = 3 dans ce cas
-# √ crée une colone "col_ordi" avec l'inverse de la suite (pourquoi...?)
 
 # affichage                                                                       COMMENT INTERPRÉTER ?
 plot_ly(out[[1]], x = ~ Comp_2, y = ~ Comp_3, z = ~ Comp_4, type = "scatter3d", mode = "markers", # z = ~Comp_3
@@ -251,7 +234,7 @@ max(fin_mods_tous[[i]]$scores) # vérifier si score bizzare pour certains échan
 
 
 #-=-=-=-=-=-=-=-=-=-=-=-=-
-# code pour graphique de probabilité "de confusion"                                                                    ----        
+# code pour graphique de probabilité et de confusion                                                              ----        
 #-=-=-=-=-=-=-=-=-=-=-=-=-
 probis <- list()
 confus <- list()
@@ -282,7 +265,6 @@ for (i in seq(n_iter)){
   probis[[i]] <- probs 
 }
 # saveRDS(confus, "savedRDS/confus_final.rds") # long, fait 29 août
-# saveRDS(probis, "savedRDS/probis_final.rds") # long, fait 29 août
 
 head(confus[[1]]) # lists of every statistics we calculated 
 
